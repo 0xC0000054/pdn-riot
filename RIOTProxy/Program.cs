@@ -27,6 +27,36 @@ namespace RIOTProxy
             internal const int RIOTLoadFailed = 3;
         }
 
+        private static unsafe bool ImageHasTransparency(BitmapSource image)
+        {
+            if (image.Format == PixelFormats.Bgra32)
+            {
+                WriteableBitmap writeable = new WriteableBitmap(image);
+
+                byte* scan0 = (byte*)writeable.BackBuffer.ToPointer();
+                int stride = writeable.BackBufferStride;
+                int width = image.PixelWidth;
+                int height = image.PixelHeight;
+
+                for (int y = 0; y < height; y++)
+                {
+                    byte* ptr = scan0 + (y * stride);
+
+                    for (int x = 0; x < width; x++)
+                    {
+                        if (ptr[3] != 255)
+                        {
+                            return true;
+                        }
+
+                        ptr += 4;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static unsafe int CreateDIBFromBitmap(string fileName, out IntPtr dibHandle)
         {
             if (fileName == null)
@@ -44,7 +74,7 @@ namespace RIOTProxy
 
                 PixelFormat dibPixelFormat;
 
-                if (frame.Format == PixelFormats.Bgra32)
+                if (ImageHasTransparency(frame))
                 {
                     dibPixelFormat = PixelFormats.Bgra32;
                 }
