@@ -56,90 +56,6 @@ namespace SaveForWebRIOT
             this.ResumeLayout(false);
         }
 
-        private static unsafe bool HasTransparency(Surface surface)
-        {
-            for (int y = 0; y < surface.Height; y++)
-            {
-                ColorBgra* ptr = surface.GetRowAddressUnchecked(y);
-                ColorBgra* ptrEnd = ptr + surface.Width;
-
-                while (ptr < ptrEnd)
-                {
-                    if (ptr->A != 255)
-                    {
-                        return true;
-                    }
-                    ptr++;
-                } 
-            }
-
-            return false;
-        }
-
-        private Bitmap GetSourceSurfaceBitmap()
-        {
-            Surface sourceSurface = this.EffectSourceSurface;
-
-            if (HasTransparency(sourceSurface))
-            {
-                return new Bitmap(sourceSurface.Width, sourceSurface.Height, sourceSurface.Stride, PixelFormat.Format32bppArgb, sourceSurface.Scan0.Pointer);
-            }
-            else
-            {
-                int width = sourceSurface.Width;
-                int height = sourceSurface.Height;
-                Bitmap image = null;
-                Bitmap tempImage = null;
-
-                try
-                {
-                    tempImage = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-                    BitmapData bd = tempImage.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, tempImage.PixelFormat);
-
-                    try
-                    {
-                        unsafe
-                        {
-                            byte* scan0 = (byte*)bd.Scan0.ToPointer();
-                            int stride = bd.Stride;
-
-                            for (int y = 0; y < height; y++)
-                            {
-                                ColorBgra* src = sourceSurface.GetRowAddressUnchecked(y);
-                                byte* dst = scan0 + (y * stride);
-
-                                for (int x = 0; x < width; x++)
-                                {
-                                    dst[0] = src->B;
-                                    dst[1] = src->G;
-                                    dst[2] = src->R;
-
-                                    src++;
-                                    dst += 3;
-                                }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        tempImage.UnlockBits(bd);
-                    }
-                    image = tempImage;
-                    tempImage = null;
-                }
-                finally
-                {
-                    if (tempImage != null)
-                    {
-                        tempImage.Dispose();
-                        tempImage = null;
-                    }
-                }
-
-                return image;
-            }
-        }
-
         private void ShowErrorMessage(string message)
         {
             MessageBox.Show(message, RIOTExportEffect.StaticName, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -156,7 +72,7 @@ namespace SaveForWebRIOT
                 try
                 {
                     string tempImageFileName =  Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-                    using (Bitmap source = GetSourceSurfaceBitmap())
+                    using (Bitmap source = this.EffectSourceSurface.CreateAliasedBitmap())
                     {
                         source.Save(tempImageFileName, ImageFormat.Png);
                     }
