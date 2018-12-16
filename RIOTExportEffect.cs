@@ -26,7 +26,15 @@ namespace SaveForWebRIOT
             }
         }
 
-        public RIOTExportEffect() : base(StaticName, null, "Tools", EffectFlags.Configurable)
+        public static Bitmap StaticIcon
+        {
+            get
+            {
+                return new Bitmap(typeof(RIOTExportEffect), "icon.png");
+            }
+        }
+
+        public RIOTExportEffect() : base(StaticName, StaticIcon, "Tools", EffectFlags.Configurable)
         {
         }
 

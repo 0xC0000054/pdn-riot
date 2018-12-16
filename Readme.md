@@ -2,6 +2,8 @@
 
 A [Paint.NET](http://www.getpaint.net) Effect plugin that exports the current layer using the [Radical Image Optimization Tool](http://luci.criosweb.ro/riot/).
 
+Some icons are from or based on those in the [Fugue](http://p.yusukekamiyamane.com/) icon set by Yusuke Kamiyamane.
+
 ##  How to install the plugin
 
 1. Exit Paint.NET.
