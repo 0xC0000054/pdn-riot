@@ -24,7 +24,8 @@ namespace RIOTProxy
             internal const int NoError = 0;
             internal const int WICLoadFailed = 1;
             internal const int OutOfMemory = 2;
-            internal const int RIOTLoadFailed = 3;
+            internal const int RIOTDllMissing = 3;
+            internal const int RIOTEntrypointNotFound = 4;
         }
 
         private static unsafe bool ImageHasTransparency(BitmapSource image)
@@ -197,12 +198,12 @@ namespace RIOTProxy
                     catch (DllNotFoundException)
                     {
                         Console.WriteLine("RIOT.dll was not found.");
-                        status = Status.RIOTLoadFailed;
+                        status = Status.RIOTDllMissing;
                     }
                     catch (EntryPointNotFoundException)
                     {
                         Console.WriteLine("The entry point 'RIOT_LoadFromDIB_U' was not found in RIOT.dll.");
-                        status = Status.RIOTLoadFailed;
+                        status = Status.RIOTEntrypointNotFound;
                     }
                 }
             }

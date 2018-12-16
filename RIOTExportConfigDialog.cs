@@ -138,7 +138,10 @@ namespace SaveForWebRIOT
                             ShowErrorMessage(Resources.OutOfMemory);
                             break;
                         case 3:
-                            ShowErrorMessage(Resources.RIOTLoadFailed);
+                            ShowErrorMessage(Resources.RIOTDllMissing);
+                            break;
+                        case 4:
+                            ShowErrorMessage(Resources.RIOTEntrypointNotFound);
                             break;
                     }
                 }

@@ -120,8 +120,11 @@
   <data name="OutOfMemory" xml:space="preserve">
     <value>Out of Memory.</value>
   </data>
-  <data name="RIOTLoadFailed" xml:space="preserve">
-    <value>RIOT_LoadFromDIB failed.</value>
+  <data name="RIOTDllMissing" xml:space="preserve">
+    <value>RIOT.dll was not found in the Effects folder.</value>
+  </data>
+  <data name="RIOTEntrypointNotFound" xml:space="preserve">
+    <value>The entry point 'RIOT_LoadFromDIB_U' was not found in RIOT.dll.</value>
   </data>
   <data name="RIOTProxyNotFound" xml:space="preserve">
     <value>RIOTProxy.exe is not in the Effects folder.</value>

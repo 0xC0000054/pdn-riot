@@ -19,7 +19,7 @@ namespace SaveForWebRIOT.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -70,11 +70,20 @@ namespace SaveForWebRIOT.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to RIOT_LoadFromDIB failed..
+        ///   Looks up a localized string similar to RIOT.dll was not found in the Effects folder..
         /// </summary>
-        internal static string RIOTLoadFailed {
+        internal static string RIOTDllMissing {
             get {
-                return ResourceManager.GetString("RIOTLoadFailed", resourceCulture);
+                return ResourceManager.GetString("RIOTDllMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The entry point &apos;RIOT_LoadFromDIB_U&apos; was not found in RIOT.dll..
+        /// </summary>
+        internal static string RIOTEntrypointNotFound {
+            get {
+                return ResourceManager.GetString("RIOTEntrypointNotFound", resourceCulture);
             }
         }
         
