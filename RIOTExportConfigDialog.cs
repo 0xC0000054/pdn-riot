@@ -140,8 +140,6 @@ namespace SaveForWebRIOT
                         case 3:
                             ShowErrorMessage(Resources.RIOTLoadFailed);
                             break;
-                        default:
-                            break;
                     }
                 }
             }
