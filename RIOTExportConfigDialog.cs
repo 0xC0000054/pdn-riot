@@ -33,7 +33,7 @@ namespace SaveForWebRIOT
 
         protected override void InitialInitToken()
         {
-            this.theEffectToken = new RIOTExportConfigToken();
+            theEffectToken = new RIOTExportConfigToken();
         }
 
         protected override void InitDialogFromToken(EffectConfigToken effectTokenCopy)
@@ -46,16 +46,16 @@ namespace SaveForWebRIOT
 
         private void InitializeComponent()
         {
-            this.SuspendLayout();
+            SuspendLayout();
             //
             // RIOTExportConfigDialog
             //
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
-            this.ClientSize = new Size(282, 253);
-            this.Location = new Point(0, 0);
-            this.Name = "RIOTExportConfigDialog";
-            this.Opacity = 0D;
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            ClientSize = new Size(282, 253);
+            Location = new Point(0, 0);
+            Name = "RIOTExportConfigDialog";
+            Opacity = 0D;
+            ResumeLayout(false);
         }
 
         private void ShowErrorMessage(string message)
@@ -67,14 +67,14 @@ namespace SaveForWebRIOT
         {
             base.OnLoad(e);
 
-            this.Visible = false;
+            Visible = false;
 
             if (File.Exists(RiotProxyPath))
             {
                 try
                 {
                     string tempImageFileName =  Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-                    using (Bitmap source = this.EffectSourceSurface.CreateAliasedBitmap())
+                    using (Bitmap source = EffectSourceSurface.CreateAliasedBitmap())
                     {
                         source.Save(tempImageFileName, ImageFormat.Png);
                     }
@@ -132,7 +132,7 @@ namespace SaveForWebRIOT
                 ShowErrorMessage(Resources.RIOTProxyNotFound);
             }
 
-            this.DialogResult = DialogResult.Cancel;
+            DialogResult = DialogResult.Cancel;
             Close();
         }
     }
