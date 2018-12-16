@@ -53,7 +53,7 @@ namespace SaveForWebRIOT
         {
             get
             {
-                return new Uri("http://www.getpaint.net/redirect/plugins.html");
+                return new Uri("https://forums.getpaint.net/topic/107365-save-for-web-with-riot-radical-image-optimization-tool/");
             }
         }
     }
