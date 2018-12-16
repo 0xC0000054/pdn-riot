@@ -28,6 +28,7 @@ namespace SaveForWebRIOT
 
         public RIOTExportConfigDialog()
         {
+            InitializeComponent();
         }
 
         protected override void InitialInitToken()
