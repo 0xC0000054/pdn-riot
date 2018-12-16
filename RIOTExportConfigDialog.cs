@@ -53,6 +53,7 @@ namespace SaveForWebRIOT
             this.ClientSize = new Size(282, 253);
             this.Location = new Point(0, 0);
             this.Name = "RIOTExportConfigDialog";
+            this.Opacity = 0D;
             this.ResumeLayout(false);
         }
 
