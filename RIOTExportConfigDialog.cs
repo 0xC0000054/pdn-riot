@@ -4,7 +4,7 @@
 //
 // This software is provided under the MIT License:
 //   Copyright (C) 2016-2017 Nicholas Hayes
-// 
+//
 // See LICENSE.txt for complete licensing and attribution information.
 //
 /////////////////////////////////////////////////////////////////////////////////
@@ -46,9 +46,9 @@ namespace SaveForWebRIOT
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            // 
+            //
             // RIOTExportConfigDialog
-            // 
+            //
             this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.ClientSize = new Size(282, 253);
             this.Location = new Point(0, 0);
@@ -77,7 +77,7 @@ namespace SaveForWebRIOT
                     {
                         source.Save(tempImageFileName, ImageFormat.Png);
                     }
-                    
+
                     // Add quotes around the image path in case it contains spaces.
                     ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"")
                     {
@@ -124,7 +124,7 @@ namespace SaveForWebRIOT
                 catch (FileNotFoundException ex)
                 {
                     ShowErrorMessage(ex.Message);
-                } 
+                }
             }
             else
             {
