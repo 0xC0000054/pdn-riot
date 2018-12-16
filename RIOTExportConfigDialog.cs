@@ -17,6 +17,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SaveForWebRIOT
@@ -57,9 +58,17 @@ namespace SaveForWebRIOT
             ResumeLayout(false);
         }
 
-        private void ShowErrorMessage(string message)
+        private DialogResult ShowErrorMessage(string message)
         {
-            MessageBox.Show(message, RIOTExportEffect.StaticName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (InvokeRequired)
+            {
+                return (DialogResult)Invoke(new Action<string>((string error) => MessageBox.Show(error, Text, MessageBoxButtons.OK, MessageBoxIcon.Error)),
+                                            message);
+            }
+            else
+            {
+                return MessageBox.Show(message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         protected override void OnLoad(EventArgs e)
@@ -70,69 +79,82 @@ namespace SaveForWebRIOT
 
             if (File.Exists(RiotProxyPath))
             {
-                try
-                {
-                    string tempImageFileName =  Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-                    using (Bitmap source = EffectSourceSurface.CreateAliasedBitmap())
-                    {
-                        source.Save(tempImageFileName, ImageFormat.Png);
-                    }
-
-                    // Add quotes around the image path in case it contains spaces.
-                    ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"")
-                    {
-                        CreateNoWindow = true,
-                        UseShellExecute = false
-                    };
-
-                    int exitCode;
-                    using (Process proc = Process.Start(startInfo))
-                    {
-                        proc.WaitForExit();
-                        exitCode = proc.ExitCode;
-                    }
-                    try
-                    {
-                        File.Delete(tempImageFileName);
-                    }
-                    catch (IOException)
-                    {
-                    }
-
-                    if (exitCode != 0)
-                    {
-                        switch (exitCode)
-                        {
-                            case 1:
-                                ShowErrorMessage(Resources.WICLoadFailed);
-                                break;
-                            case 2:
-                                ShowErrorMessage(Resources.OutOfMemory);
-                                break;
-                            case 3:
-                                ShowErrorMessage(Resources.RIOTLoadFailed);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-                catch (ExternalException ex)
-                {
-                    ShowErrorMessage(ex.Message);
-                }
-                catch (FileNotFoundException ex)
-                {
-                    ShowErrorMessage(ex.Message);
-                }
+                ThreadPool.QueueUserWorkItem(new WaitCallback(LaunchRIOT));
             }
             else
             {
-                ShowErrorMessage(Resources.RIOTProxyNotFound);
+                if (ShowErrorMessage(Resources.RIOTProxyNotFound) == DialogResult.OK)
+                {
+                    CloseForm();
+                }
             }
+        }
 
+        private void CloseForm()
+        {
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        private void LaunchRIOT(object state)
+        {
+            try
+            {
+                string tempImageFileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
+                using (Bitmap source = EffectSourceSurface.CreateAliasedBitmap())
+                {
+                    source.Save(tempImageFileName, ImageFormat.Png);
+                }
+
+                // Add quotes around the image path in case it contains spaces.
+                ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+
+                int exitCode;
+                using (Process proc = Process.Start(startInfo))
+                {
+                    proc.WaitForExit();
+                    exitCode = proc.ExitCode;
+                }
+                try
+                {
+                    File.Delete(tempImageFileName);
+                }
+                catch (IOException)
+                {
+                }
+
+                if (exitCode != 0)
+                {
+                    switch (exitCode)
+                    {
+                        case 1:
+                            ShowErrorMessage(Resources.WICLoadFailed);
+                            break;
+                        case 2:
+                            ShowErrorMessage(Resources.OutOfMemory);
+                            break;
+                        case 3:
+                            ShowErrorMessage(Resources.RIOTLoadFailed);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            catch (ExternalException ex)
+            {
+                ShowErrorMessage(ex.Message);
+            }
+            catch (FileNotFoundException ex)
+            {
+                ShowErrorMessage(ex.Message);
+            }
+
+            BeginInvoke(new Action(CloseForm));
         }
     }
 }
