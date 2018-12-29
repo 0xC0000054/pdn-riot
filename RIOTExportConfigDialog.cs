@@ -52,6 +52,7 @@ namespace SaveForWebRIOT
             //
             AutoScaleDimensions = new SizeF(96F, 96F);
             ClientSize = new Size(282, 253);
+            FormBorderStyle = FormBorderStyle.None;
             Location = new Point(0, 0);
             Name = "RIOTExportConfigDialog";
             Opacity = 0D;
