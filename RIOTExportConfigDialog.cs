@@ -76,8 +76,6 @@ namespace SaveForWebRIOT
         {
             base.OnLoad(e);
 
-            Visible = false;
-
             if (File.Exists(RiotProxyPath))
             {
                 ThreadPool.QueueUserWorkItem(new WaitCallback(LaunchRIOT));
