@@ -24,11 +24,13 @@ namespace SaveForWebRIOT
 {
     internal sealed class RIOTExportConfigDialog : EffectConfigDialog
     {
+        private Label infoLabel;
         private static readonly string RiotProxyPath = Path.Combine(Path.GetDirectoryName(typeof(RIOTExportConfigDialog).Assembly.Location), "RIOTProxy.exe");
 
         public RIOTExportConfigDialog()
         {
             InitializeComponent();
+            Text = RIOTExportEffect.StaticName;
         }
 
         protected override void InitialInitToken()
@@ -46,17 +48,32 @@ namespace SaveForWebRIOT
 
         private void InitializeComponent()
         {
-            SuspendLayout();
-            //
+            this.infoLabel = new System.Windows.Forms.Label();
+            this.SuspendLayout();
+            // 
+            // infoLabel
+            // 
+            this.infoLabel.AutoSize = true;
+            this.infoLabel.Location = new System.Drawing.Point(13, 13);
+            this.infoLabel.Name = "infoLabel";
+            this.infoLabel.Size = new System.Drawing.Size(183, 13);
+            this.infoLabel.TabIndex = 1;
+            this.infoLabel.Text = "RIOT will open in a separate window.";
+            // 
             // RIOTExportConfigDialog
-            //
-            AutoScaleDimensions = new SizeF(96F, 96F);
-            ClientSize = new Size(282, 253);
-            FormBorderStyle = FormBorderStyle.None;
-            Location = new Point(0, 0);
-            Name = "RIOTExportConfigDialog";
-            Opacity = 0D;
-            ResumeLayout(false);
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.ClientSize = new System.Drawing.Size(368, 82);
+            this.ControlBox = false;
+            this.Controls.Add(this.infoLabel);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Location = new System.Drawing.Point(0, 0);
+            this.Name = "RIOTExportConfigDialog";
+            this.ShowIcon = false;
+            this.Controls.SetChildIndex(this.infoLabel, 0);
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
         }
 
         private DialogResult ShowErrorMessage(string message)
