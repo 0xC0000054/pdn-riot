@@ -3,7 +3,7 @@
 // RIOT Save for Web Effect Plugin for Paint.NET
 //
 // This software is provided under the MIT License:
-//   Copyright (C) 2016-2018 Nicholas Hayes
+//   Copyright (C) 2016-2018, 2021 Nicholas Hayes
 //
 // See LICENSE.txt for complete licensing and attribution information.
 //
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("SaveForWebRIOT")]
-[assembly: AssemblyCopyright("Copyright © 2016-2018 Nicholas Hayes (aka null54)")]
+[assembly: AssemblyCopyright("Copyright © 2021 Nicholas Hayes (aka null54)")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
