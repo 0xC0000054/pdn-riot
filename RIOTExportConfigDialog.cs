@@ -50,18 +50,18 @@ namespace SaveForWebRIOT
         {
             this.infoLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
-            // 
+            //
             // infoLabel
-            // 
+            //
             this.infoLabel.AutoSize = true;
             this.infoLabel.Location = new System.Drawing.Point(13, 13);
             this.infoLabel.Name = "infoLabel";
             this.infoLabel.Size = new System.Drawing.Size(183, 13);
             this.infoLabel.TabIndex = 1;
             this.infoLabel.Text = "RIOT will open in a separate window.";
-            // 
+            //
             // RIOTExportConfigDialog
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.ClientSize = new System.Drawing.Size(368, 82);
             this.ControlBox = false;
@@ -80,12 +80,12 @@ namespace SaveForWebRIOT
         {
             if (InvokeRequired)
             {
-                return (DialogResult)Invoke(new Action<string>((string error) => MessageBox.Show(error, Text, MessageBoxButtons.OK, MessageBoxIcon.Error)),
+                return (DialogResult)Invoke(new Action<string>((string error) => MessageBox.Show(this, error, Text, MessageBoxButtons.OK, MessageBoxIcon.Error)),
                                             message);
             }
             else
             {
-                return MessageBox.Show(message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return MessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
