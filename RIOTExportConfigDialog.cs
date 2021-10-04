@@ -16,7 +16,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -25,6 +24,7 @@ namespace SaveForWebRIOT
     internal sealed class RIOTExportConfigDialog : EffectConfigDialog
     {
         private Label infoLabel;
+        private Thread riotWorkerThread;
         private static readonly string RiotProxyPath = Path.Combine(Path.GetDirectoryName(typeof(RIOTExportConfigDialog).Assembly.Location), "RIOTProxy.exe");
 
         public RIOTExportConfigDialog()
@@ -95,7 +95,8 @@ namespace SaveForWebRIOT
 
             if (File.Exists(RiotProxyPath))
             {
-                ThreadPool.QueueUserWorkItem(new WaitCallback(LaunchRIOT));
+                riotWorkerThread = new Thread(LaunchRiot);
+                riotWorkerThread.Start();
             }
             else
             {
@@ -112,8 +113,10 @@ namespace SaveForWebRIOT
             Close();
         }
 
-        private void LaunchRIOT(object state)
+        private void LaunchRiot()
         {
+            Exception exception = null;
+
             try
             {
                 string tempImageFileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
@@ -143,35 +146,43 @@ namespace SaveForWebRIOT
                 {
                 }
 
-                if (exitCode != 0)
+                switch (exitCode)
                 {
-                    switch (exitCode)
-                    {
-                        case 1:
-                            ShowErrorMessage(Resources.WICLoadFailed);
-                            break;
-                        case 2:
-                            ShowErrorMessage(Resources.OutOfMemory);
-                            break;
-                        case 3:
-                            ShowErrorMessage(Resources.RIOTDllMissing);
-                            break;
-                        case 4:
-                            ShowErrorMessage(Resources.RIOTEntrypointNotFound);
-                            break;
-                    }
+                    case 0:
+                        // No error.
+                        break;
+                    case 1:
+                        exception = new IOException(Resources.WICLoadFailed);
+                        break;
+                    case 2:
+                        exception = new OutOfMemoryException(Resources.OutOfMemory);
+                        break;
+                    case 3:
+                        exception = new DllNotFoundException(Resources.RIOTDllMissing);
+                        break;
+                    case 4:
+                        exception = new EntryPointNotFoundException(Resources.RIOTEntrypointNotFound);
+                        break;
                 }
             }
-            catch (ExternalException ex)
+            catch (Exception ex)
             {
-                ShowErrorMessage(ex.Message);
-            }
-            catch (FileNotFoundException ex)
-            {
-                ShowErrorMessage(ex.Message);
+                exception = ex;
             }
 
-            BeginInvoke(new Action(CloseForm));
+            BeginInvoke(new Action<Exception>(RiotThreadFinished), exception);
+        }
+
+        private void RiotThreadFinished(Exception exception)
+        {
+            riotWorkerThread.Join();
+
+            if (exception != null)
+            {
+                ShowErrorMessage(exception.Message);
+            }
+
+            CloseForm();
         }
     }
 }
