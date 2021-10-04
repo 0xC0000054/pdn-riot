@@ -141,7 +141,7 @@ namespace RIOTProxy
                     byte* src = bitmapScan0 + ((lastBitmapRow - y) * bitmapStride);
                     byte* dst = dibScan0 + (y * dibStride);
 
-                    SafeNativeMethods.CopyMemory((void*)dst, (void*)src, dibRowLength);
+                    SafeNativeMethods.CopyMemory(dst, src, dibRowLength);
                 }
             }
             catch (FileFormatException ex)
