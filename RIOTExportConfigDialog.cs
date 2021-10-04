@@ -147,7 +147,7 @@ namespace SaveForWebRIOT
             int dibBitsPerPixel = SurfaceHasTransparency(surface) ? 32 : 24;
 
             int bmiHeaderSize = Marshal.SizeOf(typeof(NativeStructs.BITMAPINFOHEADER));
-            int dibStride = ((((width * dibBitsPerPixel) + 31) & ~31) / 8);
+            int dibStride = (((width * dibBitsPerPixel) + 31) & ~31) / 8;
             long dibImageDataSize = dibStride * height;
 
             // 24-bit and 32-bit DIB files do not have a color palette.
