@@ -126,11 +126,7 @@ namespace SaveForWebRIOT
                 }
 
                 // Add quotes around the image path in case it contains spaces.
-                ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"")
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
+                ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"");
 
                 int exitCode;
                 using (Process proc = Process.Start(startInfo))

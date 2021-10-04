@@ -99,7 +99,6 @@ namespace RIOTProxy
                 }
                 catch (OutOfMemoryException)
                 {
-                    Console.WriteLine("Out of memory");
                     return Status.OutOfMemory;
                 }
 
@@ -144,24 +143,8 @@ namespace RIOTProxy
                     SafeNativeMethods.CopyMemory(dst, src, dibRowLength);
                 }
             }
-            catch (FileFormatException ex)
+            catch (Exception)
             {
-                Console.WriteLine("WIC returned an error loading the image: " + ex.Message);
-                return Status.WICLoadFailed;
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine("WIC returned an error loading the image: " + ex.Message);
-                return Status.WICLoadFailed;
-            }
-            catch (NotSupportedException ex) // WINCODEC_ERR_COMPONENTNOTFOUND
-            {
-                Console.WriteLine("WIC returned an error loading the image: " + ex.Message);
-                return Status.WICLoadFailed;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                Console.WriteLine("WIC returned an error loading the image: " + ex.Message);
                 return Status.WICLoadFailed;
             }
 
@@ -177,7 +160,6 @@ namespace RIOTProxy
 
             if (args.Length < 1)
             {
-                Console.WriteLine("Usage:  RiotProxy filename");
                 return 0;
             }
 
@@ -197,12 +179,10 @@ namespace RIOTProxy
                     }
                     catch (DllNotFoundException)
                     {
-                        Console.WriteLine("RIOT.dll was not found.");
                         status = Status.RIOTDllMissing;
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        Console.WriteLine("The entry point 'RIOT_LoadFromDIB_U' was not found in RIOT.dll.");
                         status = Status.RIOTEntrypointNotFound;
                     }
                 }
