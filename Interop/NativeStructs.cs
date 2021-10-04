@@ -11,19 +11,10 @@
 
 using System.Runtime.InteropServices;
 
-namespace RIOTProxy
+namespace SaveForWebRIOT.Interop
 {
     internal static class NativeStructs
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct RGBQUAD
-        {
-            internal byte rgbBlue;
-            internal byte rgbGreen;
-            internal byte rgbRed;
-            internal byte rgbReserved;
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFOHEADER
         {

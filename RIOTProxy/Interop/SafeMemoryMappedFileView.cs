@@ -9,13 +9,16 @@
 //
 /////////////////////////////////////////////////////////////////////////////////
 
-namespace RIOTProxy
-{
-    internal static class NativeConstants
-    {
-        internal const int BI_RGB = 0;
+using Microsoft.Win32.SafeHandles;
 
-        internal const uint SEM_FAILCRITICALERRORS = 1U;
-        internal const uint SEM_NOGPFAULTERRORBOX = 2U;
+namespace RIOTProxy.Interop
+{
+    internal sealed class SafeMemoryMappedFileView : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        private SafeMemoryMappedFileView() : base(true)
+        {
+        }
+
+        protected override bool ReleaseHandle() => SafeNativeMethods.UnmapViewOfFile(handle);
     }
 }

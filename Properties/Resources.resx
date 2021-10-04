@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="DIBLoadFailed" xml:space="preserve">
+    <value>Unable to load the exported layer.</value>
+  </data>
+  <data name="ImageLargerThan4GB" xml:space="preserve">
+    <value>The image is larger than 4GB.</value>
+  </data>
   <data name="OutOfMemory" xml:space="preserve">
     <value>Out of Memory.</value>
   </data>
@@ -128,8 +134,5 @@
   </data>
   <data name="RIOTProxyNotFound" xml:space="preserve">
     <value>RIOTProxy.exe is not in the Effects folder.</value>
-  </data>
-  <data name="WICLoadFailed" xml:space="preserve">
-    <value>WIC was unable to load the exported layer.</value>
   </data>
 </root>

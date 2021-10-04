@@ -9,13 +9,16 @@
 //
 /////////////////////////////////////////////////////////////////////////////////
 
+using PaintDotNet;
 using PaintDotNet.Effects;
+using SaveForWebRIOT.Interop;
 using SaveForWebRIOT.Properties;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -107,10 +110,143 @@ namespace SaveForWebRIOT
             }
         }
 
+        private static unsafe bool SurfaceHasTransparency(Surface surface)
+        {
+            for (int y = 0; y < surface.Height; y++)
+            {
+                ColorBgra* row = surface.GetRowAddressUnchecked(y);
+                ColorBgra* rowEnd = row + surface.Width;
+
+                while (row < rowEnd)
+                {
+                    if (row->A != 255)
+                    {
+                        return true;
+                    }
+
+                    row++;
+                }
+            }
+
+            return false;
+        }
+
         private void CloseForm()
         {
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        private unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDIB(string name, out uint fileMappingSize)
+        {
+            Surface surface = Effect.EnvironmentParameters.SourceSurface;
+
+            int width = surface.Width;
+            int height = surface.Height;
+
+            int dibBitsPerPixel = SurfaceHasTransparency(surface) ? 32 : 24;
+
+            int bmiHeaderSize = Marshal.SizeOf(typeof(NativeStructs.BITMAPINFOHEADER));
+            int dibStride = ((((width * dibBitsPerPixel) + 31) & ~31) / 8);
+            long dibImageDataSize = dibStride * height;
+
+            // 24-bit and 32-bit DIB files do not have a color palette.
+            long dibSize = bmiHeaderSize + dibImageDataSize;
+
+            if (dibSize > uint.MaxValue)
+            {
+                throw new IOException(Resources.ImageLargerThan4GB);
+            }
+
+            fileMappingSize = (uint)dibSize;
+
+            SafeMemoryMappedFileHandle handle = null;
+            SafeMemoryMappedFileHandle temp = null;
+
+            try
+            {
+                temp = SafeNativeMethods.CreateFileMappingW(new IntPtr(NativeConstants.INVALID_HANDLE_VALUE),
+                                                            IntPtr.Zero,
+                                                            NativeConstants.PAGE_READWRITE,
+                                                            0,
+                                                            (uint)dibSize,
+                                                            name);
+                if (temp.IsInvalid)
+                {
+                    throw new Win32Exception();
+                }
+
+                using (SafeMemoryMappedFileView view = SafeNativeMethods.MapViewOfFile(temp,
+                                                                                       NativeConstants.FILE_MAP_WRITE,
+                                                                                       0,
+                                                                                       0,
+                                                                                       new UIntPtr((ulong)dibSize)))
+                {
+                    if (view.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    void* baseAddress = view.DangerousGetHandle().ToPointer();
+
+                    NativeStructs.BITMAPINFOHEADER* bmiHeader = (NativeStructs.BITMAPINFOHEADER*)baseAddress;
+                    bmiHeader->biSize = (uint)bmiHeaderSize;
+                    bmiHeader->biWidth = width;
+                    bmiHeader->biHeight = height;
+                    bmiHeader->biPlanes = 1;
+                    bmiHeader->biBitCount = (ushort)dibBitsPerPixel;
+                    bmiHeader->biCompression = NativeConstants.BI_RGB;
+                    bmiHeader->biSizeImage = 0;
+                    bmiHeader->biXPelsPerMeter = 0;
+                    bmiHeader->biYPelsPerMeter = 0;
+                    bmiHeader->biClrUsed = 0;
+                    bmiHeader->biClrImportant = 0;
+
+                    int lastBitmapRow = height - 1;
+                    int dibBytesPerPixel = dibBitsPerPixel / 8;
+
+                    byte* dibScan0 = (byte*)baseAddress + bmiHeaderSize;
+
+                    for (int y = 0; y < height; y++)
+                    {
+                        // Access the surface in the order needed for a bottom-up DIB.
+                        ColorBgra* src = surface.GetRowAddressUnchecked(lastBitmapRow - y);
+                        byte* dst = dibScan0 + (y * dibStride);
+
+                        for (int x = 0; x < width; x++)
+                        {
+                            switch (dibBitsPerPixel)
+                            {
+                                case 24:
+                                    dst[0] = src->B;
+                                    dst[1] = src->G;
+                                    dst[2] = src->R;
+                                    break;
+                                case 32:
+                                    dst[0] = src->B;
+                                    dst[1] = src->G;
+                                    dst[2] = src->R;
+                                    dst[3] = src->A;
+                                    break;
+                                default:
+                                    throw new InvalidOperationException($"Unsupported { nameof(dibBitsPerPixel) } value: { dibBitsPerPixel }.");
+                            }
+
+                            src++;
+                            dst += dibBytesPerPixel;
+                        }
+                    }
+                }
+
+                handle = temp;
+                temp = null;
+            }
+            finally
+            {
+                temp?.Dispose();
+            }
+
+            return handle;
         }
 
         private void LaunchRiot()
@@ -119,27 +255,28 @@ namespace SaveForWebRIOT
 
             try
             {
-                string tempImageFileName = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".png");
-                using (Bitmap source = EffectSourceSurface.CreateAliasedBitmap())
-                {
-                    source.Save(tempImageFileName, ImageFormat.Png);
-                }
-
-                // Add quotes around the image path in case it contains spaces.
-                ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, "\"" + tempImageFileName + "\"");
-
+                string fileMappingName = "pdn_" + Guid.NewGuid().ToString();
                 int exitCode;
-                using (Process proc = Process.Start(startInfo))
-                {
-                    proc.WaitForExit();
-                    exitCode = proc.ExitCode;
-                }
+
+                SafeMemoryMappedFileHandle fileMappingHandle = null;
+
                 try
                 {
-                    File.Delete(tempImageFileName);
+                    fileMappingHandle = CreateMemoryMappedDIB(fileMappingName, out uint fileMappingSize);
+
+                    string arguments = fileMappingName + " " + fileMappingSize.ToString(CultureInfo.InvariantCulture);
+
+                    ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, arguments);
+
+                    using (Process proc = Process.Start(startInfo))
+                    {
+                        proc.WaitForExit();
+                        exitCode = proc.ExitCode;
+                    }
                 }
-                catch (IOException)
+                finally
                 {
+                    fileMappingHandle?.Dispose();
                 }
 
                 switch (exitCode)
@@ -148,7 +285,7 @@ namespace SaveForWebRIOT
                         // No error.
                         break;
                     case 1:
-                        exception = new IOException(Resources.WICLoadFailed);
+                        exception = new IOException(Resources.DIBLoadFailed);
                         break;
                     case 2:
                         exception = new OutOfMemoryException(Resources.OutOfMemory);
