@@ -24,7 +24,7 @@ namespace RIOTProxy
             internal const int DIBLoadFailed = 1;
             internal const int OutOfMemory = 2;
             internal const int RIOTDllMissing = 3;
-            internal const int RIOTEntrypointNotFound = 4;
+            internal const int RIOTEntryPointNotFound = 4;
         }
 
         private static int GetStatusForWin32Error(int win32Error)
@@ -99,7 +99,7 @@ namespace RIOTProxy
                                     }
                                     catch (EntryPointNotFoundException)
                                     {
-                                        status = Status.RIOTEntrypointNotFound;
+                                        status = Status.RIOTEntryPointNotFound;
                                     }
                                 }
                                 finally
