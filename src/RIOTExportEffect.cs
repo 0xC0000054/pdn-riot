@@ -11,12 +11,13 @@
 
 using PaintDotNet;
 using PaintDotNet.Effects;
+using PaintDotNet.Imaging;
 using System.Drawing;
 
 namespace SaveForWebRIOT
 {
     [PluginSupportInfo(typeof(PluginSupportInfo))]
-    public sealed class RIOTExportEffect : Effect
+    public sealed class RIOTExportEffect : BitmapEffect
     {
         public static string StaticName
         {
@@ -34,18 +35,21 @@ namespace SaveForWebRIOT
             }
         }
 
-        public RIOTExportEffect() : base(StaticName, StaticIcon, "Tools", EffectFlags.Configurable)
+        public RIOTExportEffect() : base(StaticName, StaticIcon, "Tools", BitmapEffectOptions.Create() with { IsConfigurable = true })
         {
         }
 
-        public override EffectConfigDialog CreateConfigDialog()
+        protected override IEffectConfigForm OnCreateConfigForm()
         {
             return new RIOTExportConfigDialog();
         }
 
-        public override void Render(EffectConfigToken parameters, RenderArgs dstArgs, RenderArgs srcArgs, Rectangle[] rois, int startIndex, int length)
+        protected override unsafe void OnRender(IBitmapEffectOutput output)
         {
-            dstArgs.Surface.CopySurface(srcArgs.Surface, rois, startIndex, length);
+            using (IBitmapLock<ColorBgra32> dst = output.LockBgra32())
+            {
+                Environment.GetSourceBitmapBgra32().CopyPixels(dst.Buffer, dst.BufferStride, dst.BufferSize, output.Bounds);
+            }
         }
     }
 }

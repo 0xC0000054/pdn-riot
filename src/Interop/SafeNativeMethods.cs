@@ -10,7 +10,6 @@
 /////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace SaveForWebRIOT.Interop
@@ -19,7 +18,6 @@ namespace SaveForWebRIOT.Interop
     internal static class SafeNativeMethods
     {
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CloseHandle(IntPtr hObject);
 
@@ -39,7 +37,6 @@ namespace SaveForWebRIOT.Interop
                                                                              UIntPtr dwNumberOfBytesToMap);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
     }

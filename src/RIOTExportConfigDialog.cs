@@ -10,7 +10,10 @@
 /////////////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.AppModel;
 using PaintDotNet.Effects;
+using PaintDotNet.Imaging;
+using PaintDotNet.Rendering;
 using SaveForWebRIOT.Interop;
 using SaveForWebRIOT.Properties;
 using System;
@@ -24,7 +27,7 @@ using System.Windows.Forms;
 
 namespace SaveForWebRIOT
 {
-    internal sealed class RIOTExportConfigDialog : EffectConfigDialog
+    internal sealed class RIOTExportConfigDialog : EffectConfigForm
     {
         private Label infoLabel;
         private Thread riotWorkerThread;
@@ -36,16 +39,16 @@ namespace SaveForWebRIOT
             Text = RIOTExportEffect.StaticName;
         }
 
-        protected override void InitialInitToken()
+        protected override EffectConfigToken OnCreateInitialToken()
         {
-            theEffectToken = new RIOTExportConfigToken();
+            return new RIOTExportConfigToken();
         }
 
-        protected override void InitDialogFromToken(EffectConfigToken effectTokenCopy)
+        protected override void OnUpdateDialogFromToken(EffectConfigToken token)
         {
         }
 
-        protected override void InitTokenFromDialog()
+        protected override void OnUpdateTokenFromDialog(EffectConfigToken dstToken)
         {
         }
 
@@ -83,19 +86,19 @@ namespace SaveForWebRIOT
         {
             if (InvokeRequired)
             {
-                return (DialogResult)Invoke(new Action<string>((string error) => MessageBox.Show(this, error, Text, MessageBoxButtons.OK, MessageBoxIcon.Error)),
-                                            message);
+                Invoke(new Action<string>((string error) => Services.GetService<IExceptionDialogService>().ShowErrorDialog(this, error, string.Empty)),
+                       message);
             }
             else
             {
-                return MessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Services.GetService<IExceptionDialogService>().ShowErrorDialog(this, message, string.Empty);
             }
+            
+            return DialogResult.OK;
         }
 
-        protected override void OnLoad(EventArgs e)
+        protected override void OnLoaded()
         {
-            base.OnLoad(e);
-
             if (File.Exists(RiotProxyPath))
             {
                 riotWorkerThread = new Thread(LaunchRiot);
@@ -110,21 +113,26 @@ namespace SaveForWebRIOT
             }
         }
 
-        private static unsafe bool SurfaceHasTransparency(Surface surface)
+        private static unsafe bool HasTransparency(IEffectInputBitmap<ColorBgra32> bitmap)
         {
-            for (int y = 0; y < surface.Height; y++)
+            using (IBitmapLock<ColorBgra32> bitmapLock = bitmap.Lock(bitmap.Bounds()))
             {
-                ColorBgra* row = surface.GetRowAddressUnchecked(y);
-                ColorBgra* rowEnd = row + surface.Width;
+                RegionPtr<ColorBgra32> region = bitmapLock.AsRegionPtr();
 
-                while (row < rowEnd)
+                foreach (RegionRowPtr<ColorBgra32> row in region.Rows)
                 {
-                    if (row->A != 255)
-                    {
-                        return true;
-                    }
+                    ColorBgra32* ptr = row.Ptr;
+                    ColorBgra32* endPtr = row.EndPtr;
 
-                    row++;
+                    while (ptr < endPtr)
+                    {
+                        if (ptr->A != 255)
+                        {
+                            return true;
+                        }
+
+                        ptr++;
+                    }
                 }
             }
 
@@ -139,12 +147,13 @@ namespace SaveForWebRIOT
 
         private unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDIB(string name, out uint fileMappingSize)
         {
-            Surface surface = Effect.EnvironmentParameters.SourceSurface;
+            IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
+            SizeInt32 size = bitmap.Size;
 
-            int width = surface.Width;
-            int height = surface.Height;
+            int width = size.Width;
+            int height = size.Height;
 
-            int dibBitsPerPixel = SurfaceHasTransparency(surface) ? 32 : 24;
+            int dibBitsPerPixel = HasTransparency(bitmap) ? 32 : 24;
 
             int bmiHeaderSize = Marshal.SizeOf(typeof(NativeStructs.BITMAPINFOHEADER));
             int dibStride = (((width * dibBitsPerPixel) + 31) & ~31) / 8;
@@ -207,33 +216,39 @@ namespace SaveForWebRIOT
 
                     byte* dibScan0 = (byte*)baseAddress + bmiHeaderSize;
 
-                    for (int y = 0; y < height; y++)
+                    using (IBitmapLock<ColorBgra32> bitmapLock = bitmap.Lock(bitmap.Bounds()))
                     {
-                        // Access the surface in the order needed for a bottom-up DIB.
-                        ColorBgra* src = surface.GetRowAddressUnchecked(lastBitmapRow - y);
-                        byte* dst = dibScan0 + (y * dibStride);
+                        RegionPtr<ColorBgra32> region = bitmapLock.AsRegionPtr();
+                        RegionRowPtrCollection<ColorBgra32> rows = region.Rows;
 
-                        for (int x = 0; x < width; x++)
+                        for (int y = 0; y < height; y++)
                         {
-                            switch (dibBitsPerPixel)
-                            {
-                                case 24:
-                                    dst[0] = src->B;
-                                    dst[1] = src->G;
-                                    dst[2] = src->R;
-                                    break;
-                                case 32:
-                                    dst[0] = src->B;
-                                    dst[1] = src->G;
-                                    dst[2] = src->R;
-                                    dst[3] = src->A;
-                                    break;
-                                default:
-                                    throw new InvalidOperationException($"Unsupported { nameof(dibBitsPerPixel) } value: { dibBitsPerPixel }.");
-                            }
+                            // Access the surface in the order needed for a bottom-up DIB.
+                            ColorBgra32* src = rows[lastBitmapRow - y].Ptr;
+                            byte* dst = dibScan0 + (y * dibStride);
 
-                            src++;
-                            dst += dibBytesPerPixel;
+                            for (int x = 0; x < width; x++)
+                            {
+                                switch (dibBitsPerPixel)
+                                {
+                                    case 24:
+                                        dst[0] = src->B;
+                                        dst[1] = src->G;
+                                        dst[2] = src->R;
+                                        break;
+                                    case 32:
+                                        dst[0] = src->B;
+                                        dst[1] = src->G;
+                                        dst[2] = src->R;
+                                        dst[3] = src->A;
+                                        break;
+                                    default:
+                                        throw new InvalidOperationException($"Unsupported {nameof(dibBitsPerPixel)} value: {dibBitsPerPixel}.");
+                                }
+
+                                src++;
+                                dst += dibBytesPerPixel;
+                            }
                         }
                     }
                 }
