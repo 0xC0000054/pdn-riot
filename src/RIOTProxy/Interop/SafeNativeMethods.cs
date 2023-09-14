@@ -10,7 +10,6 @@
 /////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
 namespace RIOTProxy.Interop
@@ -28,7 +27,6 @@ namespace RIOTProxy.Interop
             );
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CloseHandle(IntPtr hObject);
 
@@ -45,7 +43,6 @@ namespace RIOTProxy.Interop
                                                                              UIntPtr dwNumberOfBytesToMap);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);
 

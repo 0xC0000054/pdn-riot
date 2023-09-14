@@ -1,38 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FFD5AAAA-8FAE-4508-BF2B-57B9C2F200B8}</ProjectGuid>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RIOTProxy</RootNamespace>
-    <AssemblyName>RIOTProxy</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -42,32 +13,31 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Interop\NativeConstants.cs" />
-    <Compile Include="Interop\SafeMemoryMappedFileHandle.cs" />
-    <Compile Include="Interop\SafeMemoryMappedFileView.cs" />
-    <Compile Include="Interop\SafeNativeMethods.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="app.manifest">
+    <None Update="app.manifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "D:\Program Files\paint.net\Effects" /y</PostBuildEvent>
+    <PdnOutDir>D:\Program Files\paint.net\Effects\SaveForWebRIOT</PdnOutDir>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  <ItemGroup>
+    <PublishedFiles Include="$(ProjectDir)$(PublishDir)*.*" />
+    <DebugFiles Include="$(TargetDir)\RIOTProxy.*" Condition="'$(ConfigurationName)' == 'Debug'" />
+    <FilesToDelete Include="$(PdnOutDir)\RIOTProxy.*" />
+  </ItemGroup>
+  <Target Name="PreBuild" AfterTargets="Build" Condition="'$(ConfigurationName)' != 'Debug'">
+    <!-- Remove the existing loose files before deploying a single file build -->
+    <Delete Files="@(FilesToDelete)" />
   </Target>
-  <Target Name="AfterBuild">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(ConfigurationName)' == 'Debug'">
+    <!--EditBin is used to make the following changes the header of the generated 32-bit executable for compatibility with older filters:
+        1. Mark the executable as incompatible with Data Execution Prevention (DEP).
+        2. Change the OS Subsystem version to 5.1 (Windows XP) to stop the OS from automatically enabling the HeapEnableTerminationOnCorruption option.
+           See Raymond Chen's blog post "Brief Q&A on the HeapEnableTerminationOnCorruption heap information flag": https://devblogs.microsoft.com/oldnewthing/20131227-00/?p=2243
+        -->
+    <Copy SourceFiles="@(DebugFiles)" DestinationFolder="$(PdnOutDir)\%(RecursiveDir)" OverwriteReadOnlyFiles="true" />
   </Target>
-  -->
+  <Target Name="AfterPublishCommands" AfterTargets="Publish">
+    <Copy SourceFiles="@(PublishedFiles)" DestinationFolder="$(PdnOutDir)" OverwriteReadOnlyFiles="true" />
+  </Target>
 </Project>
