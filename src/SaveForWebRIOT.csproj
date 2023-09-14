@@ -17,6 +17,13 @@
     <None Remove="RIOTProxy\**" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Resources\icons\flame-120.png" />
+    <None Remove="Resources\icons\flame-144.png" />
+    <None Remove="Resources\icons\flame-192.png" />
+    <None Remove="Resources\icons\flame-384.png" />
+    <None Remove="Resources\icons\flame-96.png" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -55,7 +62,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="icon.png" />
+    <EmbeddedResource Include="Resources\icons\flame-120.png" />
+    <EmbeddedResource Include="Resources\icons\flame-144.png" />
+    <EmbeddedResource Include="Resources\icons\flame-192.png" />
+    <EmbeddedResource Include="Resources\icons\flame-384.png" />
+    <EmbeddedResource Include="Resources\icons\flame-96.png" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

@@ -31,7 +31,7 @@ namespace SaveForWebRIOT
         {
             get
             {
-                return new Bitmap(typeof(RIOTExportEffect), "icon.png");
+                return new Bitmap(typeof(RIOTExportEffect), PluginIconUtil.GetIconResourceNameForDpi(UIScaleFactor.Current.Dpi));
             }
         }
 

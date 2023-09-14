@@ -1,0 +1,1 @@
+flame.svg: https://uxwing.com/flame-icon/, licensed as free to use any personal and commercial projects without any attribution or credit https://uxwing.com/license/
