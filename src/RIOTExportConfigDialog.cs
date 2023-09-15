@@ -45,6 +45,26 @@ namespace SaveForWebRIOT
             return new RIOTExportConfigToken();
         }
 
+        protected override void OnLayout(LayoutEventArgs le)
+        {
+            int hMargin = LogicalToDeviceUnits(8);
+            int vMargin = LogicalToDeviceUnits(8);
+
+            infoLabel.Location = new System.Drawing.Point(hMargin, vMargin);
+            infoLabel.Size = TextRenderer.MeasureText(infoLabel.Text,
+                                                      infoLabel.Font,
+                                                      new System.Drawing.Size(ClientSize.Width - infoLabel.Left - hMargin, int.MaxValue),
+                                                      TextFormatFlags.WordBreak);
+            infoLabel.PerformLayout();
+
+            int clientWidth = infoLabel.Right + hMargin;
+            int clientHeight = infoLabel.Bottom + vMargin;
+
+            ClientSize = new System.Drawing.Size(clientWidth, clientHeight);
+
+            base.OnLayout(le);
+        }
+
         protected override void OnUpdateDialogFromToken(EffectConfigToken token)
         {
         }
