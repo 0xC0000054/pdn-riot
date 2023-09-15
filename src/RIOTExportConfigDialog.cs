@@ -208,7 +208,7 @@ namespace SaveForWebRIOT
             int dibBitsPerPixel = HasTransparency(bitmap) ? 32 : 24;
 
             int bmiHeaderSize = Marshal.SizeOf(typeof(NativeStructs.BITMAPINFOHEADER));
-            int dibStride = (((width * dibBitsPerPixel) + 31) & ~31) / 8;
+            long dibStride = ((((long)width * dibBitsPerPixel) + 31) & ~31) / 8;
             long dibImageDataSize = dibStride * height;
 
             // 24-bit and 32-bit DIB files do not have a color palette.
@@ -225,7 +225,7 @@ namespace SaveForWebRIOT
             int bmiHeaderSize = info.BitmapInfoHeaderSize;
             int width = info.Width;
             int height = info.Height;
-            int dibStride = info.Stride;
+            long dibStride = info.Stride;
             int dibBitsPerPixel = info.BitsPerPixel;
 
             Vector2Int32 dpi = GetResolutionInDotsPerInch(documentResolution);
@@ -489,7 +489,7 @@ namespace SaveForWebRIOT
             public DIBInfo(int bitmapInfoHeaderSize,
                            int width,
                            int height,
-                           int stride,
+                           long stride,
                            int bitsPerPixel,
                            long totalDIBSize)
             {
@@ -507,7 +507,7 @@ namespace SaveForWebRIOT
 
             public int Height { get; }
 
-            public int Stride { get; }
+            public long Stride { get; }
 
             public int BitsPerPixel { get;  }
 
