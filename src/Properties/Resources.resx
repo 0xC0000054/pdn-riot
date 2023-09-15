@@ -136,7 +136,7 @@
     <value>RIOTProxy.exe is not in the Effects folder.</value>
   </data>
   <data name="UnknownExitCodeFormat" xml:space="preserve">
-    <value>RIOTProxy.exe returned an unexpected exit code 0x{0}.</value>
+    <value>RIOTProxy.exe returned an unexpected exit code 0x{0:X8}.</value>
     <comment>{0} is the exit code as a hexidecimal string.</comment>
   </data>
   <data name="UnsupportedPlatformFormat" xml:space="preserve">

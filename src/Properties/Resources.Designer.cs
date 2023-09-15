@@ -115,7 +115,7 @@ namespace SaveForWebRIOT.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to RIOTProxy.exe returned an unexpected exit code 0x{0}..
+        ///   Looks up a localized string similar to RIOTProxy.exe returned an unexpected exit code 0x{0:X8}..
         /// </summary>
         internal static string UnknownExitCodeFormat {
             get {
