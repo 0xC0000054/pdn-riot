@@ -217,13 +217,18 @@ namespace SaveForWebRIOT
             return new DIBInfo(bmiHeaderSize, width, height, dibStride, dibBitsPerPixel, dibSize);
         }
 
-        private static unsafe void FillDib(IEffectInputBitmap<ColorBgra32> bitmap, DIBInfo info, void* baseAddress)
+        private static unsafe void FillDib(IEffectInputBitmap<ColorBgra32> bitmap,
+                                           Resolution documentResolution,
+                                           DIBInfo info,
+                                           void* baseAddress)
         {
             int bmiHeaderSize = info.BitmapInfoHeaderSize;
             int width = info.Width;
             int height = info.Height;
             int dibStride = info.Stride;
             int dibBitsPerPixel = info.BitsPerPixel;
+
+            Vector2Int32 dpi = GetResolutionInDotsPerInch(documentResolution);
 
             NativeStructs.BITMAPINFOHEADER* bmiHeader = (NativeStructs.BITMAPINFOHEADER*)baseAddress;
             bmiHeader->biSize = (uint)bmiHeaderSize;
@@ -233,8 +238,10 @@ namespace SaveForWebRIOT
             bmiHeader->biBitCount = (ushort)dibBitsPerPixel;
             bmiHeader->biCompression = NativeConstants.BI_RGB;
             bmiHeader->biSizeImage = 0;
-            bmiHeader->biXPelsPerMeter = 0;
-            bmiHeader->biYPelsPerMeter = 0;
+            // The RIOT developer documentation states that it expects the biXPelsPerMeter and biYPelsPerMeter
+            // fields to use dots-per-inch, not dots-per-meter.
+            bmiHeader->biXPelsPerMeter = dpi.X;
+            bmiHeader->biYPelsPerMeter = dpi.Y;
             bmiHeader->biClrUsed = 0;
             bmiHeader->biClrImportant = 0;
 
@@ -278,9 +285,38 @@ namespace SaveForWebRIOT
                     }
                 }
             }
+
+            static Vector2Int32 GetResolutionInDotsPerInch(Resolution resolution)
+            {
+                double xDpi;
+                double yDpi;
+
+                switch (resolution.Units)
+                {
+                    case MeasurementUnit.Pixel:
+                        xDpi = yDpi = Document.DefaultDpi;
+                        break;
+                    case MeasurementUnit.Inch:
+                        xDpi = resolution.X;
+                        yDpi = resolution.Y;
+                        break;
+                    case MeasurementUnit.Centimeter:
+                        xDpi = Document.DotsPerCmToDotsPerInch(resolution.X);
+                        yDpi = Document.DotsPerCmToDotsPerInch(resolution.Y);
+                        break;
+                    default:
+                        xDpi = yDpi = 0;
+                        break;
+                }
+
+                return new Vector2Int32((int)Math.Round(xDpi), (int)Math.Round(yDpi));
+            }
         }
 
-        private static unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDib(string name, DIBInfo info, IEffectInputBitmap<ColorBgra32> bitmap)
+        private static unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDib(string name,
+                                                                               DIBInfo info,
+                                                                               IEffectInputBitmap<ColorBgra32> bitmap,
+                                                                               Resolution documentResolution)
         {
             SafeMemoryMappedFileHandle handle = null;
             SafeMemoryMappedFileHandle temp = null;
@@ -314,7 +350,7 @@ namespace SaveForWebRIOT
                         throw new Win32Exception();
                     }
 
-                    FillDib(bitmap, info, view.DangerousGetHandle().ToPointer());
+                    FillDib(bitmap, documentResolution, info, view.DangerousGetHandle().ToPointer());
                 }
 
                 handle = temp;
@@ -338,8 +374,9 @@ namespace SaveForWebRIOT
 
                 IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
                 DIBInfo info = GetDibInfo(bitmap);
+                Resolution documentResolution = Environment.Document.Resolution;
 
-                using (SafeMemoryMappedFileHandle fileMappingHandle = CreateMemoryMappedDib(fileMappingName, info, bitmap))
+                using (SafeMemoryMappedFileHandle fileMappingHandle = CreateMemoryMappedDib(fileMappingName, info, bitmap, documentResolution))
                 {
                     using (Process proc = new())
                     {
@@ -400,12 +437,13 @@ namespace SaveForWebRIOT
             {
                 IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
                 DIBInfo info = GetDibInfo(bitmap);
+                Resolution documentResolution = Environment.Document.Resolution;
 
                 void* nativeDib = NativeMemory.Alloc((nuint)info.TotalDIBSize);
 
                 try
                 {
-                    FillDib(bitmap, info, nativeDib);
+                    FillDib(bitmap, documentResolution, info, nativeDib);
 
                     try
                     {
