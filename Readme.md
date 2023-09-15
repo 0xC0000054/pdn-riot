@@ -2,17 +2,16 @@
 
 A [Paint.NET](http://www.getpaint.net) Effect plugin that exports the current layer using the [Radical Image Optimization Tool](http://luci.criosweb.ro/riot/).
 
-Some icons are from or based on those in the [Fugue](http://p.yusukekamiyamane.com/) icon set by Yusuke Kamiyamane.
-
 ##  How to install the plugin
 
 1. Exit Paint.NET.
-2. Place FreeImage.dll, RIOT.dll, SaveForWebRIOT.dll and RIOTProxy.exe in the Paint.NET Effects folder which is usually located in one the following locations depending on the Paint.NET version you have installed.
+2. Place the SaveForWebRIOT folder in the Paint.NET Effects folder which is usually located in one the following locations depending on the Paint.NET version you have installed.
 
   Paint.NET Version |  Effects Folder Location
   --------|----------
   Classic | C:\Program Files\Paint.NET\Effects    
   Microsoft Store | Documents\paint.net App Files\Effects
+  Portable | <Paint.NET folder>\Effects
 
 3. Restart Paint.NET.
 4. The plug-in will now be available as the Save for Web with RIOT menu item in the Tools category of the Paint.NET Effects menu.
