@@ -80,7 +80,6 @@ namespace SaveForWebRIOT
             this.Controls.SetChildIndex(this.infoLabel, 0);
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         private void ShowErrorMessage(string message)
@@ -380,7 +379,6 @@ namespace SaveForWebRIOT
             try
             {
                 IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
-
                 DIBInfo info = GetDibInfo(bitmap);
 
                 void* nativeDib = NativeMemory.Alloc((nuint)info.TotalDIBSize);
