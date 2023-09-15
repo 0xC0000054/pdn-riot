@@ -30,7 +30,7 @@ namespace SaveForWebRIOT
     internal sealed class RIOTExportConfigDialog : EffectConfigForm
     {
         private Label infoLabel;
-        private Thread riotProxyWorkerThread;
+        private Thread riotWorkerThread;
         private static readonly string RiotProxyPath = Path.Combine(Path.GetDirectoryName(typeof(RIOTExportConfigDialog).Assembly.Location), "RIOTProxy.exe");
         private static readonly Version Win11OSVersion = new(10, 0, 22000, 0);
 
@@ -142,7 +142,7 @@ namespace SaveForWebRIOT
                 }
                 else
                 {
-                    ShowRiotUI();
+                    StartRiotUIThread();
                 }
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
@@ -366,7 +366,7 @@ namespace SaveForWebRIOT
 
         private void RunProxyProcess()
         {
-            Exception exception = null;
+            ErrorInfo errorInfo = null;
 
             try
             {
@@ -391,24 +391,24 @@ namespace SaveForWebRIOT
                                 // No error.
                                 break;
                             case 1:
-                                exception = new IOException(Resources.DIBLoadFailed);
+                                errorInfo = new(Resources.DIBLoadFailed);
                                 break;
                             case 2:
-                                exception = new OutOfMemoryException(Resources.OutOfMemory);
+                                errorInfo = new(Resources.OutOfMemory);
                                 break;
                             case 3:
-                                exception = new DllNotFoundException(Resources.RIOTDllMissing);
+                                errorInfo = new(Resources.RIOTDllMissing);
                                 break;
                             case 4:
-                                exception = new EntryPointNotFoundException(Resources.RIOTEntrypointNotFound);
+                                errorInfo = new(Resources.RIOTEntrypointNotFound);
                                 break;
                             case 5:
-                                exception = new IOException(Resources.RIOTLoadFromDIBFailed);
+                                errorInfo = new(Resources.RIOTLoadFromDIBFailed);
                                 break;
                             default:
-                                exception = new IOException(string.Format(CultureInfo.InvariantCulture,
-                                                                          Resources.UnknownExitCodeFormat,
-                                                                          proc.ExitCode));
+                                errorInfo = new(string.Format(CultureInfo.InvariantCulture,
+                                                              Resources.UnknownExitCodeFormat,
+                                                              proc.ExitCode));
                                 break;
                         }
                     }
@@ -416,26 +416,44 @@ namespace SaveForWebRIOT
             }
             catch (Exception ex)
             {
-                exception = ex;
+                errorInfo = new(ex);
             }
 
-            BeginInvoke(new Action<Exception>(RiotProxyThreadFinished), exception);
+            BeginInvoke(new Action<ErrorInfo>(RiotWorkerThreadFinished), errorInfo);
         }
 
-        private void RiotProxyThreadFinished(Exception exception)
+        private void RiotWorkerThreadFinished(ErrorInfo errorInfo)
         {
-            riotProxyWorkerThread.Join();
+            riotWorkerThread.Join();
 
-            if (exception != null)
+            if (errorInfo != null)
             {
-                ShowErrorMessage(exception);
+                if (errorInfo.Exception != null)
+                {
+                    ShowErrorMessage(errorInfo.Exception);
+                }
+                else if (!string.IsNullOrEmpty(errorInfo.Message))
+                {
+                    ShowErrorMessage(errorInfo.Message);
+                }
             }
 
             CloseForm();
         }
 
-        private unsafe void ShowRiotUI()
+        private unsafe void StartRiotUIThread()
         {
+            riotWorkerThread = new Thread(RiotUIThreadDoWork);
+            // RIOT may use COM, which requires STA.
+            riotWorkerThread.SetApartmentState(ApartmentState.STA);
+            riotWorkerThread.Start(Handle);
+        }
+
+        private unsafe void RiotUIThreadDoWork(object state)
+        {
+            nint parentWindowHandle = (nint)state;
+            ErrorInfo errorInfo = null;
+
             try
             {
                 IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
@@ -450,18 +468,18 @@ namespace SaveForWebRIOT
 
                     try
                     {
-                        if (!SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, Handle, string.Empty, 0))
+                        if (!SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, parentWindowHandle, string.Empty, 0))
                         {
-                            ShowErrorMessage(Resources.RIOTLoadFromDIBFailed);
+                            errorInfo = new(Resources.RIOTLoadFromDIBFailed);
                         }
                     }
                     catch (DllNotFoundException)
                     {
-                        ShowErrorMessage(Resources.RIOTDllMissing);
+                        errorInfo = new(Resources.RIOTDllMissing);
                     }
                     catch (EntryPointNotFoundException)
                     {
-                        ShowErrorMessage(Resources.RIOTEntrypointNotFound);
+                        errorInfo = new(Resources.RIOTEntrypointNotFound);
                     }
                 }
                 finally
@@ -471,17 +489,18 @@ namespace SaveForWebRIOT
             }
             catch (Exception ex)
             {
-                ShowErrorMessage(ex);
+                errorInfo = new(ex);
             }
-            CloseForm();
+
+            BeginInvoke(new Action<ErrorInfo>(RiotWorkerThreadFinished), errorInfo);
         }
 
         private void StartProxyProcessThread()
         {
             if (File.Exists(RiotProxyPath))
             {
-                riotProxyWorkerThread = new Thread(RunProxyProcess);
-                riotProxyWorkerThread.Start();
+                riotWorkerThread = new Thread(RunProxyProcess);
+                riotWorkerThread.Start();
             }
             else
             {
@@ -518,6 +537,25 @@ namespace SaveForWebRIOT
             public int BitsPerPixel { get;  }
 
             public long TotalDIBSize { get; }
+        }
+
+        private sealed class ErrorInfo
+        {
+            public ErrorInfo(Exception exception)
+            {
+                Exception = exception;
+                Message = string.Empty;
+            }
+
+            public ErrorInfo(string message)
+            {
+                Exception = null;
+                Message = message;
+            }
+
+            public Exception Exception { get; }
+
+            public string Message { get; }
         }
     }
 }
