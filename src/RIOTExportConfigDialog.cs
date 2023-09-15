@@ -55,31 +55,31 @@ namespace SaveForWebRIOT
 
         private void InitializeComponent()
         {
-            this.infoLabel = new System.Windows.Forms.Label();
-            this.SuspendLayout();
+            infoLabel = new System.Windows.Forms.Label();
+            SuspendLayout();
             //
             // infoLabel
             //
-            this.infoLabel.AutoSize = true;
-            this.infoLabel.Location = new System.Drawing.Point(13, 13);
-            this.infoLabel.Name = "infoLabel";
-            this.infoLabel.Size = new System.Drawing.Size(183, 13);
-            this.infoLabel.TabIndex = 1;
-            this.infoLabel.Text = "RIOT will open in a separate window.";
+            infoLabel.AutoSize = true;
+            infoLabel.Location = new System.Drawing.Point(13, 13);
+            infoLabel.Name = "infoLabel";
+            infoLabel.Size = new System.Drawing.Size(183, 13);
+            infoLabel.TabIndex = 1;
+            infoLabel.Text = "RIOT will open in a separate window.";
             //
             // RIOTExportConfigDialog
             //
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.ClientSize = new System.Drawing.Size(368, 82);
-            this.ControlBox = false;
-            this.Controls.Add(this.infoLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Location = new System.Drawing.Point(0, 0);
-            this.Name = "RIOTExportConfigDialog";
-            this.ShowIcon = false;
-            this.Controls.SetChildIndex(this.infoLabel, 0);
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            ClientSize = new System.Drawing.Size(368, 82);
+            ControlBox = false;
+            Controls.Add(infoLabel);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            Location = new System.Drawing.Point(0, 0);
+            Name = "RIOTExportConfigDialog";
+            ShowIcon = false;
+            Controls.SetChildIndex(infoLabel, 0);
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         private void ShowErrorMessage(string message)
