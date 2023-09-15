@@ -402,6 +402,9 @@ namespace SaveForWebRIOT
                             case 4:
                                 exception = new EntryPointNotFoundException(Resources.RIOTEntrypointNotFound);
                                 break;
+                            case 5:
+                                exception = new IOException(Resources.RIOTLoadFromDIBFailed);
+                                break;
                             default:
                                 exception = new IOException(string.Format(CultureInfo.InvariantCulture,
                                                                           Resources.UnknownExitCodeFormat,
@@ -447,7 +450,10 @@ namespace SaveForWebRIOT
 
                     try
                     {
-                        SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, Handle, string.Empty, 0);
+                        if (!SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, Handle, string.Empty, 0))
+                        {
+                            ShowErrorMessage(Resources.RIOTLoadFromDIBFailed);
+                        }
                     }
                     catch (DllNotFoundException)
                     {

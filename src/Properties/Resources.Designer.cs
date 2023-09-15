@@ -106,6 +106,15 @@ namespace SaveForWebRIOT.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to RIOT_LoadFromDIB_U returned false..
+        /// </summary>
+        internal static string RIOTLoadFromDIBFailed {
+            get {
+                return ResourceManager.GetString("RIOTLoadFromDIBFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to RIOTProxy.exe is not in the Effects folder..
         /// </summary>
         internal static string RIOTProxyNotFound {

@@ -132,6 +132,9 @@
   <data name="RIOTEntrypointNotFound" xml:space="preserve">
     <value>The entry point 'RIOT_LoadFromDIB_U' was not found in RIOT.dll.</value>
   </data>
+  <data name="RIOTLoadFromDIBFailed" xml:space="preserve">
+    <value>RIOT_LoadFromDIB_U returned false.</value>
+  </data>
   <data name="RIOTProxyNotFound" xml:space="preserve">
     <value>RIOTProxy.exe is not in the Effects folder.</value>
   </data>

@@ -28,7 +28,7 @@ namespace
 		STATUS_OUT_OF_MEMORY,
 		STATUS_RIOT_DLL_MISSING,
 		STATUS_RIOT_ENTRY_POINT_NOT_FOUND,
-		STATUS_COM_INITIALIZATION_FAILED
+		STATUS_RIOT_LOADFROMDIB_FAILED
 	};
 
 	int GetStatusForWin32Error(DWORD error)
@@ -156,7 +156,7 @@ int WINAPI wWinMain(
 		return STATUS_RIOT_ENTRY_POINT_NOT_FOUND;
 	}
 
-	pfnLoadFromDIB(fileMappingView.get(), 0, L"", 0);
+	bool result = pfnLoadFromDIB(fileMappingView.get(), 0, L"", 0);
 
-	return STATUS_NO_ERROR;
+	return result ? STATUS_NO_ERROR : STATUS_RIOT_LOADFROMDIB_FAILED;
 }
