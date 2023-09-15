@@ -142,7 +142,7 @@ int WINAPI wWinMain(
 		return GetStatusForWin32Error(GetLastError());
 	}
 
-	wil::unique_hmodule riotDll(LoadLibraryExW(L"RIOT.dll", 0, LOAD_LIBRARY_SEARCH_APPLICATION_DIR));
+	wil::unique_hmodule riotDll(LoadLibraryW(L"RIOT.dll"));
 
 	if (!riotDll)
 	{
