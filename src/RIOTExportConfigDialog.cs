@@ -132,18 +132,7 @@ namespace SaveForWebRIOT
         {
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                // Newer versions of RIOT parse the host process command line to determine the number of arguments
-                // and activate its batch processing mode if it finds two or more arguments after the process name.
-                //
-                // Because of this we have to use the proxy process if Paint.NET was started with multiple arguments.
-                if (System.Environment.GetCommandLineArgs().Length > 2)
-                {
-                    StartProxyProcessThread();
-                }
-                else
-                {
-                    StartRiotUIThread();
-                }
+                StartProxyProcessThread();
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
@@ -439,60 +428,6 @@ namespace SaveForWebRIOT
             }
 
             CloseForm();
-        }
-
-        private unsafe void StartRiotUIThread()
-        {
-            riotWorkerThread = new Thread(RiotUIThreadDoWork);
-            // RIOT may use COM, which requires STA.
-            riotWorkerThread.SetApartmentState(ApartmentState.STA);
-            riotWorkerThread.Start(Handle);
-        }
-
-        private unsafe void RiotUIThreadDoWork(object state)
-        {
-            nint parentWindowHandle = (nint)state;
-            ErrorInfo errorInfo = null;
-
-            try
-            {
-                IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
-                DIBInfo info = GetDibInfo(bitmap);
-                Resolution documentResolution = Environment.Document.Resolution;
-
-                void* nativeDib = NativeMemory.Alloc((nuint)info.TotalDIBSize);
-
-                try
-                {
-                    FillDib(bitmap, documentResolution, info, nativeDib);
-
-                    try
-                    {
-                        if (!SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, parentWindowHandle, string.Empty, 0))
-                        {
-                            errorInfo = new(Resources.RIOTLoadFromDIBFailed);
-                        }
-                    }
-                    catch (DllNotFoundException)
-                    {
-                        errorInfo = new(Resources.RIOTDllMissing);
-                    }
-                    catch (EntryPointNotFoundException)
-                    {
-                        errorInfo = new(Resources.RIOTEntrypointNotFound);
-                    }
-                }
-                finally
-                {
-                    NativeMemory.Free(nativeDib);
-                }
-            }
-            catch (Exception ex)
-            {
-                errorInfo = new(ex);
-            }
-
-            BeginInvoke(new Action<ErrorInfo>(RiotWorkerThreadFinished), errorInfo);
         }
 
         private void StartProxyProcessThread()
