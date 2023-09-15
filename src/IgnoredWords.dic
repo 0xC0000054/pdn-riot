@@ -2,3 +2,5 @@ config
 hwnd
 interop
 lpsz
+manifestdependency
+wil

@@ -12,9 +12,17 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="packages\**" />
     <Compile Remove="RIOTProxy\**" />
+    <Compile Remove="x64\**" />
+    <EmbeddedResource Remove="packages\**" />
     <EmbeddedResource Remove="RIOTProxy\**" />
+    <EmbeddedResource Remove="x64\**" />
+    <None Remove="packages\**" />
     <None Remove="RIOTProxy\**" />
+    <None Remove="x64\**" />
+    <Page Remove="packages\**" />
+    <Page Remove="x64\**" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\icons\flame-120.png" />
