@@ -61,20 +61,20 @@ namespace SaveForWebRIOT.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ARM64 support requires Windows 11..
+        /// </summary>
+        internal static string Arm64OSRequirement {
+            get {
+                return ResourceManager.GetString("Arm64OSRequirement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unable to load the exported layer..
         /// </summary>
         internal static string DIBLoadFailed {
             get {
                 return ResourceManager.GetString("DIBLoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The image is larger than 4GB..
-        /// </summary>
-        internal static string ImageLargerThan4GB {
-            get {
-                return ResourceManager.GetString("ImageLargerThan4GB", resourceCulture);
             }
         }
         
@@ -111,6 +111,24 @@ namespace SaveForWebRIOT.Properties {
         internal static string RIOTProxyNotFound {
             get {
                 return ResourceManager.GetString("RIOTProxyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to RIOTProxy.exe returned an unexpected exit code 0x{0}..
+        /// </summary>
+        internal static string UnknownExitCodeFormat {
+            get {
+                return ResourceManager.GetString("UnknownExitCodeFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0} platform is not supported..
+        /// </summary>
+        internal static string UnsupportedPlatformFormat {
+            get {
+                return ResourceManager.GetString("UnsupportedPlatformFormat", resourceCulture);
             }
         }
     }

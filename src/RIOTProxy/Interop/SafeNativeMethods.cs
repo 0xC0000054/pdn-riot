@@ -18,13 +18,11 @@ namespace RIOTProxy.Interop
     internal static class SafeNativeMethods
     {
         [DllImport("RIOT.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.I1)]
-        internal static extern bool RIOT_LoadFromDIB_U(
-            IntPtr dib,
-            IntPtr parentWindowHandle,
-            [MarshalAs(UnmanagedType.LPWStr)] string fileName,
-            int flags
-            );
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool RIOT_LoadFromDIB_U(IntPtr dib,
+                                                       IntPtr parentWindowHandle,
+                                                       [MarshalAs(UnmanagedType.LPWStr)] string fileName,
+                                                       int flags);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

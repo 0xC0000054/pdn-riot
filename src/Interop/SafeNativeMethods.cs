@@ -17,6 +17,13 @@ namespace SaveForWebRIOT.Interop
     [System.Security.SuppressUnmanagedCodeSecurity]
     internal static class SafeNativeMethods
     {
+        [DllImport("RIOT.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern unsafe bool RIOT_LoadFromDIB_U(void* dib,
+                                                              IntPtr parentWindowHandle,
+                                                              [MarshalAs(UnmanagedType.LPWStr)] string fileName,
+                                                              int flags);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CloseHandle(IntPtr hObject);

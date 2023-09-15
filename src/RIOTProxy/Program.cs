@@ -11,7 +11,6 @@
 
 using RIOTProxy.Interop;
 using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace RIOTProxy
@@ -52,12 +51,12 @@ namespace RIOTProxy
             System.Diagnostics.Debugger.Launch();
 #endif
 
-            if (args.Length < 2)
+            if (args.Length != 1)
             {
                 return 0;
             }
 
-            SafeNativeMethods.SetErrorMode(SafeNativeMethods.SetErrorMode(0U) | NativeConstants.SEM_FAILCRITICALERRORS | NativeConstants.SEM_NOGPFAULTERRORBOX);
+            _ = SafeNativeMethods.SetErrorMode(SafeNativeMethods.SetErrorMode(0U) | NativeConstants.SEM_FAILCRITICALERRORS | NativeConstants.SEM_NOGPFAULTERRORBOX);
 
             int status = Status.NoError;
 
@@ -69,52 +68,46 @@ namespace RIOTProxy
                 }
                 else
                 {
-                    if (uint.TryParse(args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out uint dibSize))
+
+                    using (SafeMemoryMappedFileView view = SafeNativeMethods.MapViewOfFile(file,
+                                                                                           NativeConstants.FILE_MAP_READ,
+                                                                                           0,
+                                                                                           0,
+                                                                                           0))
                     {
-                        using (SafeMemoryMappedFileView view = SafeNativeMethods.MapViewOfFile(file,
-                                                                                               NativeConstants.FILE_MAP_READ,
-                                                                                               0,
-                                                                                               0,
-                                                                                               new UIntPtr(dibSize)))
+                        if (view.IsInvalid)
                         {
-                            if (view.IsInvalid)
-                            {
-                                status = GetStatusForWin32Error(Marshal.GetLastWin32Error());
-                            }
-                            else
-                            {
-                                bool needsRelease = false;
+                            status = GetStatusForWin32Error(Marshal.GetLastWin32Error());
+                        }
+                        else
+                        {
+                            bool needsRelease = false;
 
-                                view.DangerousAddRef(ref needsRelease);
+                            view.DangerousAddRef(ref needsRelease);
 
+                            try
+                            {
                                 try
                                 {
-                                    try
-                                    {
-                                        SafeNativeMethods.RIOT_LoadFromDIB_U(view.DangerousGetHandle(), IntPtr.Zero, string.Empty, 0);
-                                    }
-                                    catch (DllNotFoundException)
-                                    {
-                                        status = Status.RIOTDllMissing;
-                                    }
-                                    catch (EntryPointNotFoundException)
-                                    {
-                                        status = Status.RIOTEntryPointNotFound;
-                                    }
+                                    SafeNativeMethods.RIOT_LoadFromDIB_U(view.DangerousGetHandle(), IntPtr.Zero, string.Empty, 0);
                                 }
-                                finally
+                                catch (DllNotFoundException)
                                 {
-                                    if (needsRelease)
-                                    {
-                                        view.DangerousRelease();
-                                    }
+                                    status = Status.RIOTDllMissing;
+                                }
+                                catch (EntryPointNotFoundException)
+                                {
+                                    status = Status.RIOTEntryPointNotFound;
+                                }
+                            }
+                            finally
+                            {
+                                if (needsRelease)
+                                {
+                                    view.DangerousRelease();
                                 }
                             }
                         }
-                    }
-                    else
-                    {
-                        status = Status.DIBLoadFailed;
                     }
                 }
             }

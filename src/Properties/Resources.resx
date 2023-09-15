@@ -112,16 +112,16 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arm64OSRequirement" xml:space="preserve">
+    <value>ARM64 support requires Windows 11.</value>
+  </data>
   <data name="DIBLoadFailed" xml:space="preserve">
     <value>Unable to load the exported layer.</value>
-  </data>
-  <data name="ImageLargerThan4GB" xml:space="preserve">
-    <value>The image is larger than 4GB.</value>
   </data>
   <data name="OutOfMemory" xml:space="preserve">
     <value>Out of Memory.</value>
@@ -134,5 +134,13 @@
   </data>
   <data name="RIOTProxyNotFound" xml:space="preserve">
     <value>RIOTProxy.exe is not in the Effects folder.</value>
+  </data>
+  <data name="UnknownExitCodeFormat" xml:space="preserve">
+    <value>RIOTProxy.exe returned an unexpected exit code 0x{0}.</value>
+    <comment>{0} is the exit code as a hexidecimal string.</comment>
+  </data>
+  <data name="UnsupportedPlatformFormat" xml:space="preserve">
+    <value>The {0} platform is not supported.</value>
+    <comment>{0} is the platform name</comment>
   </data>
 </root>

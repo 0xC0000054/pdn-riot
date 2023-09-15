@@ -30,8 +30,9 @@ namespace SaveForWebRIOT
     internal sealed class RIOTExportConfigDialog : EffectConfigForm
     {
         private Label infoLabel;
-        private Thread riotWorkerThread;
+        private Thread riotProxyWorkerThread;
         private static readonly string RiotProxyPath = Path.Combine(Path.GetDirectoryName(typeof(RIOTExportConfigDialog).Assembly.Location), "RIOTProxy.exe");
+        private static readonly Version Win11OSVersion = new(10, 0, 22000, 0);
 
         public RIOTExportConfigDialog()
         {
@@ -82,7 +83,7 @@ namespace SaveForWebRIOT
 
         }
 
-        private DialogResult ShowErrorMessage(string message)
+        private void ShowErrorMessage(string message)
         {
             if (InvokeRequired)
             {
@@ -93,23 +94,56 @@ namespace SaveForWebRIOT
             {
                 Services.GetService<IExceptionDialogService>().ShowErrorDialog(this, message, string.Empty);
             }
-            
-            return DialogResult.OK;
+        }
+
+        private void ShowErrorMessage(Exception exception)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action<Exception>((Exception ex) => Services.GetService<IExceptionDialogService>().ShowErrorDialog(this, ex)),
+                       exception);
+            }
+            else
+            {
+                Services.GetService<IExceptionDialogService>().ShowErrorDialog(this, exception);
+            }
         }
 
         protected override void OnLoaded()
         {
-            if (File.Exists(RiotProxyPath))
+            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                riotWorkerThread = new Thread(LaunchRiot);
-                riotWorkerThread.Start();
+                // Newer versions of RIOT parse the host process command line to determine the number of arguments
+                // and activate its batch processing mode if it finds two or more arguments after the process name.
+                //
+                // Because of this we have to use the proxy process if Paint.NET was started with multiple arguments.
+                if (System.Environment.GetCommandLineArgs().Length > 2)
+                {
+                    StartProxyProcessThread();
+                }
+                else
+                {
+                    ShowRiotUI();
+                }
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                if (System.Environment.OSVersion.Version >= Win11OSVersion)
+                {
+                    StartProxyProcessThread();
+                }
+                else
+                {
+                    ShowErrorMessage(Resources.Arm64OSRequirement);
+                    CloseForm();
+                }
             }
             else
             {
-                if (ShowErrorMessage(Resources.RIOTProxyNotFound) == DialogResult.OK)
-                {
-                    CloseForm();
-                }
+                ShowErrorMessage(string.Format(CultureInfo.CurrentCulture,
+                                               Resources.UnsupportedPlatformFormat,
+                                               RuntimeInformation.ProcessArchitecture));
+                CloseForm();
             }
         }
 
@@ -145,9 +179,8 @@ namespace SaveForWebRIOT
             Close();
         }
 
-        private unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDIB(string name, out uint fileMappingSize)
+        private static DIBInfo GetDibInfo(IEffectInputBitmap<ColorBgra32> bitmap)
         {
-            IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
             SizeInt32 size = bitmap.Size;
 
             int width = size.Width;
@@ -162,23 +195,89 @@ namespace SaveForWebRIOT
             // 24-bit and 32-bit DIB files do not have a color palette.
             long dibSize = bmiHeaderSize + dibImageDataSize;
 
-            if (dibSize > uint.MaxValue)
+            return new DIBInfo(bmiHeaderSize, width, height, dibStride, dibBitsPerPixel, dibSize);
+        }
+
+        private static unsafe void FillDib(IEffectInputBitmap<ColorBgra32> bitmap, DIBInfo info, void* baseAddress)
+        {
+            int bmiHeaderSize = info.BitmapInfoHeaderSize;
+            int width = info.Width;
+            int height = info.Height;
+            int dibStride = info.Stride;
+            int dibBitsPerPixel = info.BitsPerPixel;
+
+            NativeStructs.BITMAPINFOHEADER* bmiHeader = (NativeStructs.BITMAPINFOHEADER*)baseAddress;
+            bmiHeader->biSize = (uint)bmiHeaderSize;
+            bmiHeader->biWidth = width;
+            bmiHeader->biHeight = height;
+            bmiHeader->biPlanes = 1;
+            bmiHeader->biBitCount = (ushort)dibBitsPerPixel;
+            bmiHeader->biCompression = NativeConstants.BI_RGB;
+            bmiHeader->biSizeImage = 0;
+            bmiHeader->biXPelsPerMeter = 0;
+            bmiHeader->biYPelsPerMeter = 0;
+            bmiHeader->biClrUsed = 0;
+            bmiHeader->biClrImportant = 0;
+
+            int lastBitmapRow = height - 1;
+            int dibBytesPerPixel = dibBitsPerPixel / 8;
+
+            byte* dibScan0 = (byte*)baseAddress + bmiHeaderSize;
+
+            using (IBitmapLock<ColorBgra32> bitmapLock = bitmap.Lock(bitmap.Bounds()))
             {
-                throw new IOException(Resources.ImageLargerThan4GB);
+                RegionPtr<ColorBgra32> region = bitmapLock.AsRegionPtr();
+                RegionRowPtrCollection<ColorBgra32> rows = region.Rows;
+
+                for (int y = 0; y < height; y++)
+                {
+                    // Access the surface in the order needed for a bottom-up DIB.
+                    ColorBgra32* src = rows[lastBitmapRow - y].Ptr;
+                    byte* dst = dibScan0 + (y * dibStride);
+
+                    for (int x = 0; x < width; x++)
+                    {
+                        switch (dibBitsPerPixel)
+                        {
+                            case 24:
+                                dst[0] = src->B;
+                                dst[1] = src->G;
+                                dst[2] = src->R;
+                                break;
+                            case 32:
+                                dst[0] = src->B;
+                                dst[1] = src->G;
+                                dst[2] = src->R;
+                                dst[3] = src->A;
+                                break;
+                            default:
+                                throw new InvalidOperationException($"Unsupported {nameof(dibBitsPerPixel)} value: {dibBitsPerPixel}.");
+                        }
+
+                        src++;
+                        dst += dibBytesPerPixel;
+                    }
+                }
             }
+        }
 
-            fileMappingSize = (uint)dibSize;
-
+        private static unsafe SafeMemoryMappedFileHandle CreateMemoryMappedDib(string name, DIBInfo info, IEffectInputBitmap<ColorBgra32> bitmap)
+        {
             SafeMemoryMappedFileHandle handle = null;
             SafeMemoryMappedFileHandle temp = null;
 
             try
             {
+                long fileMappingSize = info.TotalDIBSize;
+
+                uint dwMaximumSizeHigh = (uint)(fileMappingSize >> 32);
+                uint dwMaximumSizeLow = (uint)fileMappingSize;
+
                 temp = SafeNativeMethods.CreateFileMappingW(new IntPtr(NativeConstants.INVALID_HANDLE_VALUE),
                                                             IntPtr.Zero,
                                                             NativeConstants.PAGE_READWRITE,
-                                                            0,
-                                                            (uint)dibSize,
+                                                            dwMaximumSizeHigh,
+                                                            dwMaximumSizeLow,
                                                             name);
                 if (temp.IsInvalid)
                 {
@@ -189,68 +288,14 @@ namespace SaveForWebRIOT
                                                                                        NativeConstants.FILE_MAP_WRITE,
                                                                                        0,
                                                                                        0,
-                                                                                       new UIntPtr((ulong)dibSize)))
+                                                                                       0))
                 {
                     if (view.IsInvalid)
                     {
                         throw new Win32Exception();
                     }
 
-                    void* baseAddress = view.DangerousGetHandle().ToPointer();
-
-                    NativeStructs.BITMAPINFOHEADER* bmiHeader = (NativeStructs.BITMAPINFOHEADER*)baseAddress;
-                    bmiHeader->biSize = (uint)bmiHeaderSize;
-                    bmiHeader->biWidth = width;
-                    bmiHeader->biHeight = height;
-                    bmiHeader->biPlanes = 1;
-                    bmiHeader->biBitCount = (ushort)dibBitsPerPixel;
-                    bmiHeader->biCompression = NativeConstants.BI_RGB;
-                    bmiHeader->biSizeImage = 0;
-                    bmiHeader->biXPelsPerMeter = 0;
-                    bmiHeader->biYPelsPerMeter = 0;
-                    bmiHeader->biClrUsed = 0;
-                    bmiHeader->biClrImportant = 0;
-
-                    int lastBitmapRow = height - 1;
-                    int dibBytesPerPixel = dibBitsPerPixel / 8;
-
-                    byte* dibScan0 = (byte*)baseAddress + bmiHeaderSize;
-
-                    using (IBitmapLock<ColorBgra32> bitmapLock = bitmap.Lock(bitmap.Bounds()))
-                    {
-                        RegionPtr<ColorBgra32> region = bitmapLock.AsRegionPtr();
-                        RegionRowPtrCollection<ColorBgra32> rows = region.Rows;
-
-                        for (int y = 0; y < height; y++)
-                        {
-                            // Access the surface in the order needed for a bottom-up DIB.
-                            ColorBgra32* src = rows[lastBitmapRow - y].Ptr;
-                            byte* dst = dibScan0 + (y * dibStride);
-
-                            for (int x = 0; x < width; x++)
-                            {
-                                switch (dibBitsPerPixel)
-                                {
-                                    case 24:
-                                        dst[0] = src->B;
-                                        dst[1] = src->G;
-                                        dst[2] = src->R;
-                                        break;
-                                    case 32:
-                                        dst[0] = src->B;
-                                        dst[1] = src->G;
-                                        dst[2] = src->R;
-                                        dst[3] = src->A;
-                                        break;
-                                    default:
-                                        throw new InvalidOperationException($"Unsupported {nameof(dibBitsPerPixel)} value: {dibBitsPerPixel}.");
-                                }
-
-                                src++;
-                                dst += dibBytesPerPixel;
-                            }
-                        }
-                    }
+                    FillDib(bitmap, info, view.DangerousGetHandle().ToPointer());
                 }
 
                 handle = temp;
@@ -264,53 +309,50 @@ namespace SaveForWebRIOT
             return handle;
         }
 
-        private void LaunchRiot()
+        private void RunProxyProcess()
         {
             Exception exception = null;
 
             try
             {
                 string fileMappingName = "pdn_" + Guid.NewGuid().ToString();
-                int exitCode;
 
-                SafeMemoryMappedFileHandle fileMappingHandle = null;
+                IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
+                DIBInfo info = GetDibInfo(bitmap);
 
-                try
+                using (SafeMemoryMappedFileHandle fileMappingHandle = CreateMemoryMappedDib(fileMappingName, info, bitmap))
                 {
-                    fileMappingHandle = CreateMemoryMappedDIB(fileMappingName, out uint fileMappingSize);
-
-                    string arguments = fileMappingName + " " + fileMappingSize.ToString(CultureInfo.InvariantCulture);
-
-                    ProcessStartInfo startInfo = new ProcessStartInfo(RiotProxyPath, arguments);
-
-                    using (Process proc = Process.Start(startInfo))
+                    using (Process proc = new())
                     {
-                        proc.WaitForExit();
-                        exitCode = proc.ExitCode;
-                    }
-                }
-                finally
-                {
-                    fileMappingHandle?.Dispose();
-                }
+                        proc.StartInfo = new ProcessStartInfo(RiotProxyPath, fileMappingName);
+                        proc.Start();
 
-                switch (exitCode)
-                {
-                    case 0:
-                        // No error.
-                        break;
-                    case 1:
-                        exception = new IOException(Resources.DIBLoadFailed);
-                        break;
-                    case 2:
-                        exception = new OutOfMemoryException(Resources.OutOfMemory);
-                        break;
-                    case 3:
-                        exception = new DllNotFoundException(Resources.RIOTDllMissing);
-                        break;
-                    case 4:
-                        exception = new EntryPointNotFoundException(Resources.RIOTEntrypointNotFound);
-                        break;
+                        proc.WaitForExit();
+
+                        switch (proc.ExitCode)
+                        {
+                            case 0:
+                                // No error.
+                                break;
+                            case 1:
+                                exception = new IOException(Resources.DIBLoadFailed);
+                                break;
+                            case 2:
+                                exception = new OutOfMemoryException(Resources.OutOfMemory);
+                                break;
+                            case 3:
+                                exception = new DllNotFoundException(Resources.RIOTDllMissing);
+                                break;
+                            case 4:
+                                exception = new EntryPointNotFoundException(Resources.RIOTEntrypointNotFound);
+                                break;
+                            default:
+                                exception = new IOException(string.Format(CultureInfo.InvariantCulture,
+                                                                          Resources.UnknownExitCodeFormat,
+                                                                          proc.ExitCode));
+                                break;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -318,19 +360,102 @@ namespace SaveForWebRIOT
                 exception = ex;
             }
 
-            BeginInvoke(new Action<Exception>(RiotThreadFinished), exception);
+            BeginInvoke(new Action<Exception>(RiotProxyThreadFinished), exception);
         }
 
-        private void RiotThreadFinished(Exception exception)
+        private void RiotProxyThreadFinished(Exception exception)
         {
-            riotWorkerThread.Join();
+            riotProxyWorkerThread.Join();
 
             if (exception != null)
             {
-                ShowErrorMessage(exception.Message);
+                ShowErrorMessage(exception);
             }
 
             CloseForm();
+        }
+
+        private unsafe void ShowRiotUI()
+        {
+            try
+            {
+                IEffectInputBitmap<ColorBgra32> bitmap = Environment.GetSourceBitmapBgra32();
+
+                DIBInfo info = GetDibInfo(bitmap);
+
+                void* nativeDib = NativeMemory.Alloc((nuint)info.TotalDIBSize);
+
+                try
+                {
+                    FillDib(bitmap, info, nativeDib);
+
+                    try
+                    {
+                        SafeNativeMethods.RIOT_LoadFromDIB_U(nativeDib, Handle, string.Empty, 0);
+                    }
+                    catch (DllNotFoundException)
+                    {
+                        ShowErrorMessage(Resources.RIOTDllMissing);
+                    }
+                    catch (EntryPointNotFoundException)
+                    {
+                        ShowErrorMessage(Resources.RIOTEntrypointNotFound);
+                    }
+                }
+                finally
+                {
+                    NativeMemory.Free(nativeDib);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage(ex);
+            }
+            CloseForm();
+        }
+
+        private void StartProxyProcessThread()
+        {
+            if (File.Exists(RiotProxyPath))
+            {
+                riotProxyWorkerThread = new Thread(RunProxyProcess);
+                riotProxyWorkerThread.Start();
+            }
+            else
+            {
+                ShowErrorMessage(Resources.RIOTProxyNotFound);
+                CloseForm();
+            }
+        }
+
+        private sealed class DIBInfo
+        {
+            public DIBInfo(int bitmapInfoHeaderSize,
+                           int width,
+                           int height,
+                           int stride,
+                           int bitsPerPixel,
+                           long totalDIBSize)
+            {
+                BitmapInfoHeaderSize = bitmapInfoHeaderSize;
+                Width = width;
+                Height = height;
+                Stride = stride;
+                BitsPerPixel = bitsPerPixel;
+                TotalDIBSize = totalDIBSize;
+            }
+
+            public int BitmapInfoHeaderSize { get; }
+
+            public int Width { get; }
+
+            public int Height { get; }
+
+            public int Stride { get; }
+
+            public int BitsPerPixel { get;  }
+
+            public long TotalDIBSize { get; }
         }
     }
 }

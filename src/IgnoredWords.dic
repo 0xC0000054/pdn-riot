@@ -1,2 +1,4 @@
 config
+hwnd
 interop
+lpsz
